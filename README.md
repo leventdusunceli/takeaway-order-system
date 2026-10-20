@@ -24,9 +24,36 @@ Three roles, three screens, all synced live across any number of devices:
 
 ![Admin](docs/admin.jpg)
 
-## Try it
+## Getting started
 
-This copy is connected to a separate demo database with sample data only. Log in with:
+This repo is connected to a separate demo database with sample data only, so you can run it without creating any accounts or setting up a backend.
+
+### Prerequisites
+
+- [Git](https://git-scm.com/downloads)
+- Python 3 (only to serve the files locally; any static file server works, for example the VS Code "Live Server" extension or `npx serve`)
+- A modern browser (Chrome, Safari, Firefox, Edge)
+
+There is nothing to install and no build step: no `npm install`, no bundler.
+
+### Run it locally
+
+1. Clone the repository and enter the folder:
+
+   ```bash
+   git clone https://github.com/leventdusunceli/takeaway-order-system.git
+   cd takeaway-order-system
+   ```
+
+2. Start a local web server:
+
+   ```bash
+   python3 -m http.server 8000
+   ```
+
+3. Open `http://localhost:8000` in your browser.
+
+### Log in
 
 | Role | E-mail | Password |
 |---|---|---|
@@ -34,15 +61,15 @@ This copy is connected to a separate demo database with sample data only. Log in
 | Küche | `kueche@gmail.com` | `kueche53117` |
 | Admin | `chef@gmail.com` | `chef53117` |
 
-Open two browser windows, log in as Kellner in one and Küche in the other, send an order and watch it arrive. These logins are public on purpose. Please do not enter real personal data.
+### Try the live sync
 
-To run it locally:
+1. Open two browser windows. Use a private/incognito window for the second one, so the two logins do not mix.
+2. Log in as **Küche** in one window and tap "Ton einschalten" to enable sound.
+3. Log in as **Kellner** in the other, choose a category, add dishes, tap "Weiter" and "Bestellung senden".
+4. The order appears in the Küche window within about a second, with a sound. Tap the card to move it to "In Zubereitung", then "Fertig", and watch the status update in the Kellner window.
+5. Log in as **Admin** to search orders by date and export them as CSV.
 
-```bash
-python3 -m http.server 8000
-```
-
-Then open `http://localhost:8000`.
+These logins are public on purpose. Please do not enter real personal data.
 
 ## How it works
 
@@ -85,7 +112,7 @@ Browser (phone / tablet)  <-- WebSocket (live) -->  Supabase (EU, Frankfurt): Au
 
 ## Set up your own copy
 
-1. Create a free Supabase project and turn off public sign-ups.
+1. Clone the repo (see "Run it locally"). Then create a free Supabase project and turn off public sign-ups.
 2. Create three users: `kellner@…`, `kueche@…`, `chef@…`. The part before the `@` sets the role.
 3. Run `schema.sql` in the Supabase SQL Editor.
 4. Put your project URL and anon key into `config.js`.

@@ -36,13 +36,27 @@ window.MENU = [
     { name: 'Herr Labneh', price: 1050 },
     { name: 'Frau Labneh', price: 1050 },
   ] },
-  { cat: 'Mezze', items: [
+  { cat: 'Mezzeplatten', items: [
     { name: 'Mezze für Zwei', price: 3320 },
     { name: 'Mezze für Zwei vegan', price: 3320 },
+    { name: 'Mezze für Drei', price: 4990 },
+    { name: 'Mezze für Drei vegan', price: 4990 },
+    { name: 'Mezze für Vier', price: 6450 },
+    { name: 'Mezze für Vier vegan', price: 6450 },
+  ] },
+  { cat: 'Mezze', items: [
+    { name: 'Humus Mezze', price: 470 },
+    { name: 'Baba Mezze', price: 470 },
+    { name: 'Labneh Mezze', price: 470 },
+    { name: 'Fava Mezze', price: 430 },
+    { name: 'Salat Mezze', price: 430 },
+    { name: 'Matbucha Mezze', price: 430 },
+    { name: 'Blumenkohl Mezze', price: 430 },
   ] },
   { cat: 'Pita', items: [
     { name: 'Pita Falafel', price: 760 },
     { name: 'Pita Sabich', price: 870 },
+    { name: 'Pita Mr. Humus', price: 980 },
     { name: '1 Pita-Brot', price: 120 },
     { name: '5 Pita-Brot', price: 570 },
     { name: '10 Pita-Brot', price: 1160 },
