@@ -2,6 +2,8 @@
 
 A small real-time web app for restaurant take-away orders. Built for a restaurant that used to copy every phone, walk-in and email order into Apple Notes by hand. Runs in the mobile browser. The interface is in German.
 
+**Live demo: https://takeaway-order-system.netlify.app** (demo logins [below](#log-in))
+
 Three roles, three screens, all synced live across any number of devices:
 
 - **Kellner (waiter):** taps the order together from a category menu, picks a pickup time, sends it. Can still edit an order until the kitchen marks it done. One tap marks an order as paid, and one tap marks a finished order as picked up.
@@ -10,25 +12,33 @@ Three roles, three screens, all synced live across any number of devices:
 
 ## Screenshots
 
-(Sample data.)
+All screenshots use sample data.
 
-| Kellner: categories | Kellner: finish order |
-|---|---|
-| <img src="docs/kellner-kategorien.jpg" width="260"> | <img src="docs/kellner-bestellung.jpg" width="260"> |
+**Kellner (phone):** pick a category, finish the order, and follow all open orders. On the right, one tap on **Bezahlt** marks an order as paid, and **Abgeholt** marks a finished order as picked up. Picked-up orders move into a collapsed section so the list stays short.
 
-**Küche** (tablet):
+| Categories | Finish order | Overview with payment and pick-up |
+|---|---|---|
+| <img src="docs/kellner-kategorien.jpg" width="240"> | <img src="docs/kellner-bestellung.jpg" width="240"> | <img src="docs/kellner-uebersicht.jpg" width="240"> |
+
+**Küche (tablet):** new orders on the left, finished ones on the right. Finished cards show whether the order is already paid, and the kitchen can mark them as picked up.
 
 ![Küche board](docs/kueche.jpg)
 
-**Admin**:
+**Admin:** search any date range, see revenue, paid and picked-up times, and export CSV.
 
 ![Admin](docs/admin.jpg)
 
 ## Getting started
 
-This repo is connected to a separate demo database with sample data only, so you can run it without creating any accounts or setting up a backend.
+**Use the live demo link, or follow the command-line quick start below.** Both use a separate demo database with sample data only, so you do not need to create any accounts or set up a backend.
 
-### Prerequisites
+### Option 1: Live demo
+
+Open **https://takeaway-order-system.netlify.app** and [log in](#log-in) with one of the demo accounts. Nothing to install.
+
+### Option 2: Command-line quick start
+
+**Prerequisites**
 
 - [Git](https://git-scm.com/downloads)
 - Python 3 (only to serve the files locally; any static file server works, for example the VS Code "Live Server" extension or `npx serve`)
@@ -36,7 +46,7 @@ This repo is connected to a separate demo database with sample data only, so you
 
 There is nothing to install and no build step: no `npm install`, no bundler.
 
-### Run it locally
+**Run it locally**
 
 1. Clone the repository and enter the folder:
 
@@ -55,6 +65,8 @@ There is nothing to install and no build step: no `npm install`, no bundler.
 
 ### Log in
 
+Works for both options.
+
 | Role | E-mail | Password |
 |---|---|---|
 | Kellner | `kellner@gmail.com` | `kellner53117` |
@@ -67,7 +79,8 @@ There is nothing to install and no build step: no `npm install`, no bundler.
 2. Log in as **Küche** in one window and tap "Ton einschalten" to enable sound.
 3. Log in as **Kellner** in the other, choose a category, add dishes, tap "Weiter" and "Bestellung senden".
 4. The order appears in the Küche window within about a second, with a sound. Tap the card to move it to "In Zubereitung", then "Fertig", and watch the status update in the Kellner window.
-5. Log in as **Admin** to search orders by date and export them as CSV.
+5. In the Kellner window, open **Übersicht** and tap **Bezahlt** on the order. When it is "Fertig", tap **Abgeholt**. The card leaves the Küche board.
+6. Log in as **Admin** to search orders by date and export them as CSV.
 
 These logins are public on purpose. Please do not enter real personal data.
 

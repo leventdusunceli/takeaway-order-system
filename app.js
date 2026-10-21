@@ -445,6 +445,10 @@ function exportCsv(rows) {
 }
 
 /* ---------- Start ---------- */
+// Netlify (Gratis-Tarif) blendet unten rechts ein "Powered by Netlify"-Feld ein. Dann Platz für die Buttons schaffen.
+const badgeCheck = () => document.body.classList.toggle('has-badge', !!$('#nl-badge-frame'));
+new MutationObserver(badgeCheck).observe(document.body, { childList: true });
+badgeCheck();
 window.addEventListener('hashchange', route);
 sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT' && S.user) setSession(null); });
 sb.auth.getSession().then(({ data }) => setSession(data.session));
