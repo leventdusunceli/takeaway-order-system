@@ -4,9 +4,9 @@ A small real-time web app for restaurant take-away orders. Built for a restauran
 
 Three roles, three screens, all synced live across any number of devices:
 
-- **Kellner (waiter):** taps the order together from a category menu, picks a pickup time, sends it. Can still edit an order until the kitchen marks it done.
-- **Küche (kitchen):** new orders appear instantly with a sound. One tap = "In Zubereitung", second tap = "Fertig". Edited orders are flagged.
-- **Admin (chef):** looks up all orders for any date range, sees the revenue, and exports CSV.
+- **Kellner (waiter):** taps the order together from a category menu, picks a pickup time, sends it. Can still edit an order until the kitchen marks it done. One tap marks an order as paid, and one tap marks a finished order as picked up.
+- **Küche (kitchen):** new orders appear instantly with a sound. One tap = "In Zubereitung", second tap = "Fertig". Edited orders are flagged. Finished orders show whether they are paid, and picked-up orders disappear from the board.
+- **Admin (chef):** looks up all orders for any date range, sees the revenue and the paid / picked-up times, and exports CSV.
 
 ## Screenshots
 
@@ -86,8 +86,8 @@ Browser (phone / tablet)  <-- WebSocket (live) -->  Supabase (EU, Frankfurt): Au
 
 | Role | Can read | Can write |
 |---|---|---|
-| Kellner | open orders and today's finished ones | create orders, edit orders that are not "Fertig" (never the status) |
-| Küche | open orders and today's finished ones | status only |
+| Kellner | open orders and today's finished ones | create orders, edit orders that are not "Fertig", mark paid / picked up (never the status) |
+| Küche | open orders and today's finished ones | status and "picked up" only |
 | Admin | everything | everything |
 
 - Sign-up is disabled. Accounts are created by hand.

@@ -37,6 +37,10 @@ create table if not exists public.orders (
   ack_at         timestamptz,                            -- Küche hat Änderung gesehen
   created_by     uuid default auth.uid() references auth.users(id)
 );
+-- Später hinzugefügt (sicher für bestehende Daten): bezahlt / abgeholt, leer = nein
+alter table public.orders add column if not exists paid_at timestamptz;
+alter table public.orders add column if not exists picked_up_at timestamptz;
+
 create index if not exists orders_created_at_idx on public.orders (created_at);
 alter table public.orders enable row level security;
 
@@ -54,7 +58,7 @@ begin
                             where created_at >= public.berlin_today()), 0) + 1;
   if public.my_role() <> 'admin' then
     new.status := 'neu'; new.started_at := null; new.ready_at := null;
-    new.edited_at := null; new.ack_at := null;
+    new.edited_at := null; new.ack_at := null; new.paid_at := null; new.picked_up_at := null;
   end if;
   new.created_by := auth.uid();
   return new;
@@ -75,19 +79,30 @@ begin
   end if;
 
   if r = 'kellner' then
-    if old.status = 'fertig' then raise exception 'Bestellung ist schon fertig'; end if;
     if new.status is distinct from old.status or new.started_at is distinct from old.started_at
        or new.ready_at is distinct from old.ready_at or new.ack_at is distinct from old.ack_at then
       raise exception 'Kellner darf den Status nicht ändern';
     end if;
-    new.edited_at := now();
+    -- Inhalt ändern: nur solange nicht fertig. "Bezahlt" und "Abgeholt" gehen immer.
+    if (new.pickup_at, new.customer_name, new.customer_phone, new.note, new.source, new.items, new.total_cents)
+       is distinct from
+       (old.pickup_at, old.customer_name, old.customer_phone, old.note, old.source, old.items, old.total_cents) then
+      if old.status = 'fertig' then raise exception 'Bestellung ist schon fertig'; end if;
+      new.edited_at := now();
+    else
+      new.edited_at := old.edited_at;
+    end if;
+    if new.picked_up_at is not null and old.status <> 'fertig' then
+      raise exception 'Nur fertige Bestellungen können abgeholt werden';
+    end if;
   elsif r = 'kueche' then
     if new.pickup_at is distinct from old.pickup_at or new.customer_name is distinct from old.customer_name
        or new.customer_phone is distinct from old.customer_phone or new.note is distinct from old.note
        or new.source <> old.source or new.items <> old.items or new.total_cents <> old.total_cents
-       or new.edited_at is distinct from old.edited_at then
+       or new.edited_at is distinct from old.edited_at or new.paid_at is distinct from old.paid_at then
       raise exception 'Küche darf nur den Status ändern';
     end if;
+    if new.status <> 'fertig' then new.picked_up_at := null; end if;     -- zurück in Arbeit = nicht abgeholt
   else
     raise exception 'Keine Berechtigung';
   end if;
@@ -116,7 +131,7 @@ create policy "Kellner senden" on public.orders
 drop policy if exists "Kellner ändern" on public.orders;
 create policy "Kellner ändern" on public.orders
   for update to authenticated
-  using (public.my_role() = 'kellner' and status <> 'fertig')
+  using (public.my_role() = 'kellner')           -- was geändert werden darf, regelt der Trigger oben
   with check (public.my_role() = 'kellner');
 
 drop policy if exists "Küche Status" on public.orders;

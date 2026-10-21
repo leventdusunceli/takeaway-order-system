@@ -20,7 +20,7 @@ function el(tag, props, ...kids) {           // kleiner Element-Baukasten (textC
   kids.flat().forEach((c) => { if (c != null && c !== false) n.append(c.nodeType ? c : document.createTextNode(c)); });
   return n;
 }
-const fill = (node, ...kids) => node.replaceChildren(...kids.flat().filter((c) => c != null && c !== false));
+const fill = (node, ...kids) => node.replaceChildren(...kids.flat(Infinity).filter((c) => c != null && c !== false));
 const eur = (c) => (c / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
 const hm = (d) => new Date(d).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 const dayStr = (d) => new Date(d).toLocaleDateString('sv-SE');          // JJJJ-MM-TT (lokal)
@@ -189,22 +189,36 @@ function pickupLabel(o) {
   return `Abholung ${day}${hm(d)} Uhr`;
 }
 
-async function setStatus(o, status) {
-  const now = new Date().toISOString();
-  const patch = { status, ack_at: now,
-    started_at: status === 'neu' ? null : (o.started_at || now),
-    ready_at: status === 'fertig' ? now : null };
+async function patchOrder(o, patch) {            // eine Änderung speichern (Rechte prüft die Datenbank)
   const { data, error } = await sb.from('orders').update(patch).eq('id', o.id).select().single();
-  if (error) return toast('Status konnte nicht geändert werden.', true);
+  if (error) return toast('Änderung fehlgeschlagen. Bitte erneut versuchen.', true);
   put(data); live.render();
 }
+const stamp = (on) => (on ? new Date().toISOString() : null);
+function setStatus(o, status) {
+  const now = new Date().toISOString();
+  patchOrder(o, { status, ack_at: now, started_at: status === 'neu' ? null : (o.started_at || now), ready_at: status === 'fertig' ? now : null });
+}
+const ackChange = (o) => patchOrder(o, { ack_at: stamp(true) });          // "Änderung gesehen", Status bleibt
+const togglePaid = (o) => patchOrder(o, { paid_at: stamp(!o.paid_at) });
+const setPickedUp = (o, yes) => patchOrder(o, { picked_up_at: stamp(yes) });
 const advance = (o) => { if (o.status !== 'fertig') setStatus(o, o.status === 'neu' ? 'in_arbeit' : 'fertig'); };
 const goBack = (o) => setStatus(o, o.status === 'fertig' ? 'in_arbeit' : 'neu');
 const stop = (fn) => (e) => { e.stopPropagation(); fn(); };
 
 function orderCard(o, mode) {
   const kitchen = mode === 'kueche';
-  const cls = ['card', 's-' + o.status, isLate(o) && 'late', kitchen && 'tap', kitchen && o.status === 'neu' && 'fresh'];
+  const cls = ['card', 's-' + o.status, isLate(o) && 'late', kitchen && 'tap', kitchen && o.status === 'neu' && 'fresh', o.picked_up_at && 'picked'];
+  const acts = kitchen ? [
+    o.status === 'fertig' && el('button', { class: 'primary small', onclick: stop(() => setPickedUp(o, true)) }, 'Abgeholt ✓'),
+    o.status !== 'neu' && el('button', { class: 'ghost small', onclick: stop(() => goBack(o)) }, '↩ Zurück'),
+  ] : mode === 'kellner' ? [
+    el('button', { class: 'pay small' + (o.paid_at ? ' on' : o.status === 'fertig' && !o.picked_up_at ? ' due' : ''), onclick: () => togglePaid(o) }, o.paid_at ? '✓ Bezahlt' : 'Bezahlt'),
+    o.picked_up_at ? el('button', { class: 'ghost small', onclick: () => setPickedUp(o, false) }, '↩ Zurück')
+      : el('button', { class: 'primary small', onclick: () => (o.status === 'fertig' ? setPickedUp(o, true) : startEdit(o)) }, o.status === 'fertig' ? 'Abgeholt' : 'Bearbeiten'),
+  ] : [];
+  const times = mode === 'admin' ? [o.started_at && 'gestartet ' + hm(o.started_at), o.ready_at && 'fertig ' + hm(o.ready_at),
+    o.picked_up_at && 'abgeholt ' + hm(o.picked_up_at), o.paid_at ? 'bezahlt ' + hm(o.paid_at) : 'nicht bezahlt'] : [];
   return el('article', { class: cls.filter(Boolean).join(' '), onclick: kitchen ? () => advance(o) : null },
     el('div', { class: 'card-head' }, el('span', { class: 'no' }, '#' + o.daily_no), el('span', { class: 'pick' }, pickupLabel(o))),
     el('div', { class: 'meta' }, [o.customer_name, o.customer_phone, SOURCE[o.source], 'bestellt ' + hm(o.created_at)].filter(Boolean).join(' · ')),
@@ -213,18 +227,12 @@ function orderCard(o, mode) {
     el('ul', { class: 'items' }, o.items.map((i) => el('li', {}, el('b', {}, i.qty + '×'), ' ' + i.name, i.note && el('em', {}, ' – ' + i.note)))),
     o.note && el('div', { class: 'onote' }, 'Notiz: ' + o.note),
     el('div', { class: 'card-foot' },
-      el('span', { class: 'pill' }, STATUS[o.status]),
+      el('span', { class: 'pill' }, o.picked_up_at ? 'Abgeholt' : STATUS[o.status]),
       !kitchen && el('span', {}, eur(o.total_cents)),
-      mode === 'admin' && o.started_at && el('span', { class: 'meta' }, 'gestartet ' + hm(o.started_at)),
-      mode === 'admin' && o.ready_at && el('span', { class: 'meta' }, 'fertig ' + hm(o.ready_at)),
+      kitchen && o.status === 'fertig' && el('span', { class: o.paid_at ? 'ok' : 'warn' }, o.paid_at ? '✓ Bezahlt' : 'Nicht bezahlt'),
+      times.filter(Boolean).map((t) => el('span', { class: 'meta' }, t)),
       kitchen && o.status !== 'fertig' && el('span', { class: 'hint' }, 'Tippen: ' + (o.status === 'neu' ? 'In Zubereitung' : 'Fertig')),
-      kitchen && o.status !== 'neu' && el('button', { class: 'ghost', onclick: stop(() => goBack(o)) }, '↩ Zurück'),
-      mode === 'kellner' && o.status !== 'fertig' && el('button', { class: 'primary small', onclick: () => startEdit(o) }, 'Bearbeiten')));
-}
-async function ackChange(o) {                   // nur "Änderung gesehen", Status bleibt
-  const { data, error } = await sb.from('orders').update({ ack_at: new Date().toISOString() }).eq('id', o.id).select().single();
-  if (error) return toast('Konnte nicht bestätigen.', true);
-  put(data); live.render();
+      acts.some(Boolean) && el('span', { class: 'acts' }, acts)));
 }
 
 /* ---------- 7. Kellner ---------- */
@@ -355,11 +363,15 @@ function viewUebersicht() {
   startLive(() => {
     const box = $('#list'); if (!box) return;
     const all = [...live.map.values()];
-    const open = all.filter((o) => o.status !== 'fertig').sort((a, b) => sortKey(a) - sortKey(b));
-    const done = all.filter((o) => o.status === 'fertig').sort((a, b) => new Date(b.ready_at) - new Date(a.ready_at));
+    const by = (f, cmp) => all.filter(f).sort(cmp).map((o) => orderCard(o, 'kellner'));
+    const open = by((o) => o.status !== 'fertig', (a, b) => sortKey(a) - sortKey(b));
+    const ready = by((o) => o.status === 'fertig' && !o.picked_up_at, (a, b) => new Date(a.ready_at) - new Date(b.ready_at));
+    const picked = by((o) => o.picked_up_at, (a, b) => new Date(b.picked_up_at) - new Date(a.picked_up_at));
     fill(box,
-      el('h2', {}, `Offen (${open.length})`), open.length ? open.map((o) => orderCard(o, 'kellner')) : el('p', { class: 'empty' }, 'Keine offenen Bestellungen'),
-      el('h2', {}, `Fertig heute (${done.length})`), done.map((o) => orderCard(o, 'kellner')));
+      el('h2', {}, `Offen (${open.length})`), open.length ? open : el('p', { class: 'empty' }, 'Keine offenen Bestellungen'),
+      ready.length > 0 && [el('h2', {}, `Fertig, wartet auf Abholung (${ready.length})`), ready],
+      picked.length > 0 && el('details', { open: S.showPicked, ontoggle: (e) => { S.showPicked = e.target.open; } },
+        el('summary', {}, `Abgeholt (${picked.length})`), picked));
   }, false);
 }
 
@@ -375,7 +387,7 @@ function viewKueche() {
     const b = $('#board'); if (!b) return;
     const all = [...live.map.values()];
     const cols = [['neu', 'Neu'], ['in_arbeit', 'In Zubereitung'], ['fertig', 'Fertig']];
-    const of = (s) => all.filter((o) => o.status === s).sort(s === 'fertig' ? (a, c) => new Date(c.ready_at) - new Date(a.ready_at) : (a, c) => sortKey(a) - sortKey(c));
+    const of = (s) => all.filter((o) => o.status === s && !o.picked_up_at).sort(s === 'fertig' ? (a, c) => new Date(c.ready_at) - new Date(a.ready_at) : (a, c) => sortKey(a) - sortKey(c));
     b.replaceChildren(
       el('div', { class: 'tabs' }, cols.map(([s, t]) => el('button', { class: S.tab === s ? 'on' : '', onclick: () => { S.tab = s; live.render(); } }, `${t} (${of(s).length})`))),
       el('div', { class: 'cols' }, cols.map(([s, t]) => el('section', { class: 'col' + (S.tab === s ? ' active' : '') },
@@ -419,13 +431,13 @@ function viewAdmin() {
 
 function exportCsv(rows) {
   const safe = (v) => { v = String(v ?? ''); return /^[=+\-@]/.test(v) ? "'" + v : v; };   // Schutz vor Excel-Formeln
-  const head = ['Nr', 'Datum', 'Bestellt', 'Abholung', 'Name', 'Telefon', 'Quelle', 'Status', 'Artikel', 'Notiz', 'Summe EUR'];
+  const head = ['Nr', 'Datum', 'Bestellt', 'Abholung', 'Name', 'Telefon', 'Quelle', 'Status', 'Artikel', 'Notiz', 'Summe EUR', 'Bezahlt', 'Abgeholt'];
   const lines = rows.map((o) => [
     o.daily_no, new Date(o.created_at).toLocaleDateString('de-DE'), hm(o.created_at),
     o.pickup_at ? new Date(o.pickup_at).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : 'Ab sofort',
     o.customer_name, o.customer_phone, SOURCE[o.source], STATUS[o.status],
     o.items.map((i) => `${i.qty}x ${i.name}${i.note ? ' (' + i.note + ')' : ''}`).join(' | '), o.note,
-    (o.total_cents / 100).toFixed(2).replace('.', ','),
+    (o.total_cents / 100).toFixed(2).replace('.', ','), o.paid_at ? 'Ja' : 'Nein', o.picked_up_at ? hm(o.picked_up_at) : '',
   ]);
   const text = [head, ...lines].map((r) => r.map((v) => `"${safe(v).replace(/"/g, '""')}"`).join(';')).join('\r\n');
   const a = el('a', { href: URL.createObjectURL(new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' })), download: 'bestellungen.csv' });

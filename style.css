@@ -95,6 +95,14 @@ section { margin-bottom: 8px; }
 .onote { background: rgba(245, 166, 35, .15); border-radius: 8px; padding: 6px 10px; margin-bottom: 8px; }
 .card-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .card-foot .hint { color: var(--muted); font-size: 14px; margin-right: auto; }
+.acts { margin-left: auto; display: flex; gap: 8px; }
+.ok, .warn { font-size: 14px; font-weight: 700; }
+.ok { color: var(--done); } .warn { color: var(--neu); }
+button.pay.on { background: var(--done); border-color: var(--done); color: #fff; font-weight: 700; }
+button.pay.due { border-color: var(--neu); color: var(--neu); }
+.card.picked { opacity: .55; }
+.card.picked .pill { background: var(--line); color: var(--muted); }
+summary { cursor: pointer; margin: 18px 0 8px; font-size: 16px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 .pill { background: var(--line); border-radius: 999px; padding: 4px 12px; font-size: 14px; font-weight: 700; }
 .s-neu .pill { background: var(--neu); color: #1a1206; } .s-in_arbeit .pill { background: var(--work); color: #fff; } .s-fertig .pill { background: var(--done); color: #fff; }
 .chg { display: flex; align-items: center; justify-content: space-between; margin: 6px 0; padding: 4px 4px 4px 12px; border-radius: 8px; background: var(--late); color: #fff; font-weight: 800; animation: pulse 1.2s infinite; }
